@@ -37,9 +37,10 @@ class TextPreparation(object):
         return text.apply(_lemmatize_doc)
     
     def _filter_words(self,text):
-        cv = CountVectorizer(min_df=self.cv_params["min_df"],max_df=self.cv_params["max_df"])
-        #cv = CountVectorizer(max_features=10000)
+        #cv = CountVectorizer(min_df=self.cv_params["min_df"],max_df=self.cv_params["max_df"])
+        cv = CountVectorizer(max_features=2000)
         cv.fit(text)
+        print(len(cv.vocabulary_))
 
         filtered_text = text.apply(lambda x: " ".join([word for word in x.split() if word in cv.vocabulary_]))
         print((text.str.len() == 0).sum())

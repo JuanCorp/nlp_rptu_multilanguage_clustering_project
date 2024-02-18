@@ -6,6 +6,7 @@ import numpy as np
 from collections import Counter
 import spacy
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 
 class Evaluation(object):
@@ -18,24 +19,60 @@ class Evaluation(object):
 
     def create_utility_objects(self,data):
         self.tokenized_word_sentences = [word_tokenize(s) for s in data.values]
+        self.data = data
         self.id2word = corpora.Dictionary(self.tokenized_word_sentences)
 
     
 
-    def get_top_topic_tokens(self,topics):
+    def get_top_topic_tokens(self,topics,method="freq"):
         topic_top_n = list()
         for topic in range(self.n_topics):
             topic_indexes = [i for i,t in enumerate(topics) for p in t if topic in p]
             topic_sentences = [t for i,t in enumerate(self.tokenized_word_sentences) if i in topic_indexes]
             all_topic_words = [word for sentence in topic_sentences for word in sentence]
-            frequency = FreqDist(all_topic_words)
-            top_n = frequency.most_common(self.topk)
-            top_n_words = [t[0] for t in top_n]
+            if method == "freq":
+                frequency = FreqDist(all_topic_words)
+                top_n = frequency.most_common(self.topk)
+                top_n_words = [t[0] for t in top_n]
+            if method == "tfidf":
+                topic_data = self.data.iloc[topic_indexes].values
+                tfidf = TfidfVectorizer()
+                transformed_data = tfidf.fit_transform(topic_data)
+                top_word_indexes = np.squeeze(np.asarray(transformed_data.mean(axis=0))).argsort()[-self.topk:]
+                print(top_word_indexes)
+                wordlist = tfidf.get_feature_names_out()
+                top_n_words = [wordlist[i] for i in top_word_indexes]
+                print(top_n_words)
             topic_top_n.append(top_n_words)
         
         self.topic_top_n = topic_top_n
         return topic_top_n
     
+    def get_top_topic_tokens_lda(self,topics,method="freq"):
+        topic_top_n = list()
+        for topic in range(self.n_topics):
+            topic_indexes = [i for i,t in enumerate(topics) if topic in t]
+            topic_sentences = [t for i,t in enumerate(self.tokenized_word_sentences) if i in topic_indexes]
+            all_topic_words = [word for sentence in topic_sentences for word in sentence]
+            if method == "freq":
+                frequency = FreqDist(all_topic_words)
+                top_n = frequency.most_common(self.topk)
+                top_n_words = [t[0] for t in top_n]
+                
+            if method == "tfidf":
+                topic_data = self.data.iloc[topic_indexes].values
+                tfidf = TfidfVectorizer()
+                transformed_data = tfidf.fit_transform(topic_data)
+                top_word_indexes = np.squeeze(np.asarray(transformed_data.mean(axis=0))).argsort()[-self.topk:]
+                wordlist = tfidf.get_feature_names_out()
+                top_n_words = [wordlist[i] for i in top_word_indexes]
+            topic_top_n.append(top_n_words)
+        print(topic_top_n)
+        self.topic_top_n = topic_top_n
+        return topic_top_n
+    
+
+
     def get_topic_diversity(self,top_tokens):
         unique_words = set()
         for topic in range(self.n_topics):
@@ -68,6 +105,16 @@ class Evaluation(object):
         for topic in range(self.n_topics):
                     topic_indexes = [i for i,t in enumerate(topics) for p in t if topic in p]
                     topic_sentences = [t for i,t in enumerate(tokenized_word_sentences) if i in topic_indexes]
+                    all_topic_words = [word for sentence in topic_sentences for word in sentence]
+                    frequency = Counter(all_topic_words)
+                    topic_counters.append(frequency)
+        return topic_counters
+    
+    def _get_topic_counters_lda(self,tokenized_word_sentences,topics):
+        topic_counters = list()
+        for topic in range(self.n_topics):
+                    topic_indexes = [i for i,t in enumerate(topics) if topic in t]
+                    topic_sentences = [t for i,t in enumerate(self.tokenized_word_sentences) if i in topic_indexes]
                     all_topic_words = [word for sentence in topic_sentences for word in sentence]
                     frequency = Counter(all_topic_words)
                     topic_counters.append(frequency)
@@ -120,9 +167,12 @@ class Evaluation(object):
         return entities
     
 
-    def _get_language_vectors_ner(self,text,topics,language):
+    def _get_language_vectors_ner(self,text,topics,language,lda=False):
         tokenized_word_sentences = self._get_tokenized_word_sentences(text)
-        topic_counters = self._get_topic_counters(tokenized_word_sentences,topics)
+        if lda:
+            topic_counters = self._get_topic_counters_lda(tokenized_word_sentences,topics)
+        else:
+            topic_counters = self._get_topic_counters(tokenized_word_sentences,topics)
         all_words = [word for sentence in tokenized_word_sentences for word in sentence]
         frequency = Counter(all_words)
         word_probabilities = self._calculate_word_probabilities(topic_counters,len(frequency.keys()))
@@ -130,9 +180,9 @@ class Evaluation(object):
         entities = self._get_ner(text,language)
         return word_vectors,entities
 
-    def get_cross_lingual_alignment(self,english_topics,spanish_topics,english_text,spanish_text):
-        english_vectors,english_entities = self._get_language_vectors_ner(english_text,english_topics,"english")
-        spanish_vectors,spanish_entities = self._get_language_vectors_ner(spanish_text,spanish_topics,"spanish")
+    def get_cross_lingual_alignment(self,english_topics,spanish_topics,english_text,spanish_text,lda=False):
+        english_vectors,english_entities = self._get_language_vectors_ner(english_text,english_topics,"english",lda)
+        spanish_vectors,spanish_entities = self._get_language_vectors_ner(spanish_text,spanish_topics,"spanish",lda)
         common_entities = english_entities.intersection(spanish_entities)
         comparison_vectors = dict()
         for word in common_entities:

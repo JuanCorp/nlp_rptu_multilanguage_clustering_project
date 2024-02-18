@@ -20,11 +20,28 @@
  2024-01-10
 
 
-- Use another pretrained embedding model (larger one)
+- Use another pretrained embedding model (larger one) (done)
 - Compare with Cross Lingual Contextualized Topic Models
 - Compare LDA  (Slower, Need both languages during training)
-- TF-IDF for determining top tokens (Tired of Topic Models)
-- Upload Repo on Github
+- TF-IDF for determining top tokens (Tired of Topic Models) (done)
+- Upload Repo on Github (done)
 
  
  
+
+2024-01-24
+
+- Train separate LDAs (done)
+- DTM model (won't run)
+- Contextualized Topic Model 
+- LDA, CTM, My Model, table comparison (Coherence, diversity, CLA)
+- https://github.com/MilaNLProc/contextualized-topic-models
+
+
+2024 -02-07
+
+- Measure times
+- DTM reduce vocab size for scientific dataset
+- Performance (Complexity,CPU, RAM, GPU) 
+- Semantic Similarity Topic (Show how CLA works)
+

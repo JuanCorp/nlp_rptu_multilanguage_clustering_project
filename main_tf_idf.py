@@ -10,7 +10,8 @@ from modules.evaluation import Evaluation
 CONSTANTS = {
     "dataset":"UN_100w",
     "embedding_method":"tf-idf",
-    "model":"KM"
+    "model":"KM",
+    "topic_method":"tfidf"
 }
 
 def run_experiment():
@@ -49,12 +50,12 @@ def run_experiment():
     print("Calculating Utilities")
     utils = Evaluation()
     utils.create_utility_objects(prepped_text)
-    top_tokens = utils.get_top_topic_tokens(topics)
+    top_tokens = utils.get_top_topic_tokens(topics,method="tfidf")
     coherence = utils.get_coherence(top_tokens)
 
     spanish_utils = Evaluation()
     spanish_utils.create_utility_objects(spanish_prepped_text)
-    spanish_top_tokens = spanish_utils.get_top_topic_tokens(spanish_topics)
+    spanish_top_tokens = spanish_utils.get_top_topic_tokens(spanish_topics,method="tfidf")
     spanish_coherence = spanish_utils.get_coherence(spanish_top_tokens)
 
 
@@ -75,7 +76,7 @@ def run_experiment():
 
     print("Saving...")
     data_saver = DataSaver()
-    data_saver.save_object(final_object,"results_tf_idf_KM_science.json")
+    data_saver.save_object(final_object,"results_tf_idf_KM_tfidftopic.json")
     print("Done")
 
 
